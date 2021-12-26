@@ -3,6 +3,7 @@
 #include <TFT_eSPI.h>
 #include <lvgl.h>
 #include <lv_demo.h>
+#include <esp_http_client.h>
 
 /*
   TFT_SET
@@ -50,33 +51,39 @@ void LV_Init(){
 }
 
 void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
   TFT_Init();
   LV_Init();
-  // put your setup code here, to run once:
-  //Serial.begin(9600);
-    String LVGL_Arduino = "Hello Arduino! ";
-    LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-    //lv_demo_widgets();            // OK
-    lv_obj_t *label = lv_label_create( lv_scr_act() );
-    lv_label_set_text( label, LVGL_Arduino.c_str() );
-    //lv_label_set_text( label, "i love you" )kk;
-    lv_label_set_recolor(label, true);//先得使能文本重绘色功能
-    lv_label_set_text( label, "#ff0000 red#,#00ff00 green#,#0000ff blue#" );
-    lv_obj_align( label, LV_ALIGN_CENTER, 0, 0 );
-    lv_obj_set_size(label,200,5);
-  
+}
+char num[5]={'1','2','3','4','\0'};
+
+void Num2Char(int num,char* str){
+    int i;
+    int tmp=num;
+    for(i=3;i>=0;i--){
+        *(str+i) = tmp%10+'0';
+        tmp = tmp/10;
+    }
+    *(str+4) = '\0';
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  lv_obj_t *label_1 = lv_label_create( lv_scr_act() );
-    //lv_label_set_text( label, LVGL_Arduino.c_str() );
+    lv_obj_t *label_1 = lv_label_create( lv_scr_act() );
+    lv_obj_set_align(label_1,LV_ALIGN_CENTER);
     lv_label_set_text(label_1, "you love me" );
-    lv_obj_align( label_1, LV_ALIGN_CENTER, 0, 10 );
-    lv_timer_handler(); /* let the GUI do its work */
+    
+    int i=0;
     while(1){
-      Serial.print("init is ok\n");
-      delay(5);
+        Num2Char(i,num);
+        Serial.printf("%s\n",num);
+        //Serial.printf("%d",i);
+        lv_label_set_text(label_1,num);
+        lv_timer_handler(); /* let the GUI do its work */
+        delay(50);
+        lv_label_set_text(label_1,"you");
+        i ++;
     }
 }
