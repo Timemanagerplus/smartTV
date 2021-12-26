@@ -4,6 +4,8 @@
 #include <lvgl.h>
 #include <lv_demo.h>
 #include <esp_http_client.h>
+#include <WiFi.h>
+#include <time.h>
 
 /*
   TFT_SET
@@ -21,6 +23,9 @@ static const uint16_t screenHeight = 240;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * 10 ];
 static lv_disp_drv_t disp_drv;
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 8*3600;
+const int   daylightOffset_sec = 3600;
 /* Display flushing */
 void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p )
 {
@@ -31,11 +36,8 @@ void my_disp_flush( lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *colo
     tft.setAddrWindow( area->x1, area->y1, w, h );
     tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
     tft.endWrite();
-    Serial.print("It is printing");
-
     lv_disp_flush_ready( disp );
 }
-
 
 void LV_Init(){
     lv_init();
@@ -49,12 +51,39 @@ void LV_Init(){
     disp_drv.draw_buf = &draw_buf;
     lv_disp_drv_register( &disp_drv );
 }
+void printLocalTime()
+{
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%D %A, %B %d %Y %H:%M:%S");
+}
+void WiFi_Init(){
+  const char* ssid="TP-LINK_B18F";
+  const char* passwd="12345ssdlh";
+
+  WiFi.begin(ssid,passwd);
+  while(WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.printf("no connect\n");
+  }
+    Serial.printf("connect is ok\n");
+}
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   TFT_Init();
   LV_Init();
+  WiFi_Init();
+  //init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  printLocalTime();
+  //disconnect WiFi as it's no longer needed
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
 }
 char num[5]={'1','2','3','4','\0'};
 
@@ -78,11 +107,11 @@ void loop() {
     int i=0;
     while(1){
         Num2Char(i,num);
-        Serial.printf("%s\n",num);
         //Serial.printf("%d",i);
+        printLocalTime();
         lv_label_set_text(label_1,num);
         lv_timer_handler(); /* let the GUI do its work */
-        delay(50);
+        delay(500);
         lv_label_set_text(label_1,"you");
         i ++;
     }
